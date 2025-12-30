@@ -1,0 +1,5 @@
+src/app/api/tickets/[id]/route.ts(10,86): error TS2339: Property 'cookies' does not exist on type 'Request'.
+src/app/api/tickets/route.ts(7,86): error TS2339: Property 'cookies' does not exist on type 'Request'.
+src/app/api/tickets/route.ts(39,86): error TS2339: Property 'cookies' does not exist on type 'Request'.
+src/lib/prisma.ts(1,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+src/middleware.ts(2,34): error TS2307: Cannot find module 'next/request' or its corresponding type declarations.
