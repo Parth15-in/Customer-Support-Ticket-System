@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Loader2, Plus } from 'lucide-react';
+import { X, Loader2, Plus, AlertCircle } from 'lucide-react';
 
 export default function CreateTicketModal({ isOpen, onClose, onCreated }: { isOpen: boolean, onClose: () => void, onCreated: () => void }) {
     const [formData, setFormData] = useState({
@@ -10,11 +10,13 @@ export default function CreateTicketModal({ isOpen, onClose, onCreated }: { isOp
         priority: 'MEDIUM'
     });
     const [isPending, setIsPending] = useState(false);
+    const [error, setError] = useState('');
 
     if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         setIsPending(true);
 
         try {
@@ -24,13 +26,18 @@ export default function CreateTicketModal({ isOpen, onClose, onCreated }: { isOp
                 body: JSON.stringify(formData),
             });
 
+            const data = await res.json();
+
             if (res.ok) {
                 onCreated();
                 onClose();
                 setFormData({ title: '', description: '', priority: 'MEDIUM' });
+            } else {
+                throw new Error(data.error || 'Failed to create ticket');
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            setError(err.message);
         } finally {
             setIsPending(false);
         }
@@ -55,6 +62,13 @@ export default function CreateTicketModal({ isOpen, onClose, onCreated }: { isOp
                     </h2>
                     <p className="text-slate-500 mt-2 font-medium">Please provide the details of your support request.</p>
                 </div>
+
+                {error && (
+                    <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl mb-8 text-sm font-semibold flex items-center gap-3 animate-in shake-in duration-300">
+                        <AlertCircle size={20} />
+                        {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">

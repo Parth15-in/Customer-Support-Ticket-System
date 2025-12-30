@@ -6,24 +6,28 @@ import Navbar from '@/components/Navbar';
 import TicketCard from '@/components/TicketCard';
 import CreateTicketModal from '@/components/CreateTicketModal';
 import TicketDetailsModal from '@/components/TicketDetailsModal';
-import { Plus, Loader2, LayoutDashboard, Ticket as TicketIcon, ListTodo } from 'lucide-react';
+import { Plus, Loader2, LayoutDashboard, Ticket as TicketIcon, ListTodo, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
     const { user, isLoading: authLoading } = useAuth();
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<any>(null);
     const router = useRouter();
 
     const fetchTickets = useCallback(async () => {
+        setError('');
         try {
             const res = await fetch('/api/tickets');
             const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to fetch tickets');
             setTickets(data);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            setError(err.message);
         } finally {
             setLoading(false);
         }
@@ -82,6 +86,20 @@ export default function DashboardPage() {
                 {loading ? (
                     <div className="flex justify-center py-20">
                         <Loader2 className="animate-spin text-blue-600" size={40} />
+                    </div>
+                ) : error ? (
+                    <div className="glass text-center py-20 rounded-3xl">
+                        <div className="inline-flex items-center justify-center p-6 bg-rose-500/10 text-rose-500 rounded-full mb-6">
+                            <AlertCircle size={48} />
+                        </div>
+                        <h3 className="text-xl font-bold text-white">Something went wrong</h3>
+                        <p className="text-slate-500 mt-2">{error}</p>
+                        <button
+                            onClick={fetchTickets}
+                            className="mt-6 text-blue-400 font-semibold hover:underline"
+                        >
+                            Try again
+                        </button>
                     </div>
                 ) : tickets.length === 0 ? (
                     <div className="glass text-center py-20 rounded-3xl">

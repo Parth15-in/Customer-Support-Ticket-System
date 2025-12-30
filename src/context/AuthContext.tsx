@@ -54,15 +54,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const logout = async () => {
+        // Clear local state and storage immediately for better responsiveness
+        setUser(null);
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+
         try {
+            // Tell the server to clear the cookie
             await fetch('/api/auth/logout', { method: 'POST' });
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            setUser(null);
-            sessionStorage.removeItem('user');
-            sessionStorage.removeItem('token');
-            router.push('/login');
+            // Use window.location.replace for a clean app reset on logout
+            // This clears all React state and ensures middleware runs fresh
+            window.location.replace('/login');
         }
     };
 

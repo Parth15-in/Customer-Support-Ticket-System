@@ -1,6 +1,7 @@
 'use client';
 
-import { Calendar, User, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Calendar, User, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface TicketCardProps {
     ticket: any;
@@ -10,6 +11,8 @@ interface TicketCardProps {
 }
 
 export default function TicketCard({ ticket, onUpdate, isAgent, onClick }: TicketCardProps) {
+    const [isPending, setIsPending] = useState(false);
+    const [error, setError] = useState('');
     const getStatusStyles = (status: string) => {
         switch (status) {
             case 'OPEN': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
@@ -29,28 +32,48 @@ export default function TicketCard({ ticket, onUpdate, isAgent, onClick }: Ticke
     };
 
     const updateStatus = async (newStatus: string) => {
+        setIsPending(true);
+        setError('');
         try {
             const res = await fetch(`/api/tickets/${ticket.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus }),
             });
-            if (res.ok) onUpdate?.();
-        } catch (err) {
+            if (res.ok) {
+                onUpdate?.();
+            } else {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to update status');
+            }
+        } catch (err: any) {
             console.error(err);
+            setError(err.message);
+        } finally {
+            setIsPending(false);
         }
     };
 
     const assignToMe = async () => {
+        setIsPending(true);
+        setError('');
         try {
             const res = await fetch(`/api/tickets/${ticket.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ assignToMe: true }),
             });
-            if (res.ok) onUpdate?.();
-        } catch (err) {
+            if (res.ok) {
+                onUpdate?.();
+            } else {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to assign ticket');
+            }
+        } catch (err: any) {
             console.error(err);
+            setError(err.message);
+        } finally {
+            setIsPending(false);
         }
     };
 
@@ -87,45 +110,55 @@ export default function TicketCard({ ticket, onUpdate, isAgent, onClick }: Ticke
             </div>
 
             {isAgent && (
-                <div className="flex items-center gap-3 mt-6 pt-4 border-t border-slate-800/50">
-                    {!ticket.agentId ? (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                assignToMe();
-                            }}
-                            className="btn-primary py-1.5 px-4 text-xs flex-1"
-                        >
-                            Claim Ticket
-                        </button>
-                    ) : (
-                        <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-bold uppercase tracking-widest flex-1">
-                            <CheckCircle2 size={12} /> Assigned to you
-                        </div>
-                    )}
-
-                    {ticket.status !== 'RESOLVED' && ticket.agentId && (
-                        <div className="flex gap-2">
-                            {ticket.status === 'OPEN' && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        updateStatus('IN_PROGRESS');
-                                    }}
-                                    className="btn-secondary py-1.5 px-3 text-xs"
-                                >
-                                    Start
-                                </button>
-                            )}
+                <div className="flex flex-col gap-3 mt-6 pt-4 border-t border-slate-800/50">
+                    <div className="flex items-center gap-3">
+                        {!ticket.agentId ? (
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    updateStatus('RESOLVED');
+                                    assignToMe();
                                 }}
-                                className="btn-primary py-1.5 px-4 text-xs bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20"
+                                disabled={isPending}
+                                className="btn-primary py-1.5 px-4 text-xs flex-1 h-8 flex items-center justify-center"
                             >
-                                Resolve
+                                {isPending ? <Loader2 size={14} className="animate-spin" /> : 'Claim Ticket'}
                             </button>
+                        ) : (
+                            <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-bold uppercase tracking-widest flex-1">
+                                <CheckCircle2 size={12} /> Assigned to you
+                            </div>
+                        )}
+
+                        {ticket.status !== 'RESOLVED' && ticket.agentId && (
+                            <div className="flex gap-2">
+                                {ticket.status === 'OPEN' && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateStatus('IN_PROGRESS');
+                                        }}
+                                        disabled={isPending}
+                                        className="btn-secondary py-1.5 px-3 text-xs h-8 flex items-center justify-center"
+                                    >
+                                        {isPending ? <Loader2 size={14} className="animate-spin" /> : 'Start'}
+                                    </button>
+                                )}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateStatus('RESOLVED');
+                                    }}
+                                    disabled={isPending}
+                                    className="btn-primary py-1.5 px-4 text-xs bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20 h-8 flex items-center justify-center"
+                                >
+                                    {isPending ? <Loader2 size={14} className="animate-spin" /> : 'Resolve'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    {error && (
+                        <div className="text-[10px] text-rose-500 font-bold flex items-center gap-1">
+                            <AlertCircle size={10} /> {error}
                         </div>
                     )}
                 </div>
